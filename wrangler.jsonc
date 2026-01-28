@@ -7,11 +7,9 @@
   "dev": {
     "port": 8000
   },
-  // "vars": {
-  //   "CLOUDAMQP_HTTP_URL":"https://vulture.rmq.cloudamqp.com/api/exchanges/lbyrbqqj/amq.default/publish",
-  //   "CLOUDAMQP_USERNAME":"lbyrbqqj",
-  //   "CLOUDAMQP_PASSWORD":"YKZTvjyNFgkS2gvdnEaUN2g5BDC8bz89"
-  // },
+  "vars": {
+    "APP_PUBLIC_URL":"https://9924b856b261.ngrok-free.app",
+  }
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],
