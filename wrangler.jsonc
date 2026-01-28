@@ -1,8 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cfw_api",
-  "main": "src/index.ts",
   "compatibility_date": "2026-01-27",
+  "main": "src/index.ts",
+  "minify": true,
   "dev": {
     "port": 8000
   },
