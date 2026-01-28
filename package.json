@@ -1,0 +1,17 @@
+{
+  "name": "cfw_api",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+  },
+  "dependencies": {
+    "hono": "^4.11.6",
+    "amqplib": "^0.10.9"
+  },
+  "devDependencies": {
+    "wrangler": "^4.4.0",
+    "@types/amqplib": "^0.10.8"
+  }
+}
