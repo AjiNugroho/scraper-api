@@ -54,7 +54,11 @@ app.post('/send-message', async (c) => {
 });
 
 app.get('/', (c) => {
-  return c.text('Hello Hono!')
+  return c.text('here is scraper api by')
+})
+
+app.get('/health', (c) => {
+  return c.json({ status: 'ok' })
 })
 
 export default app
