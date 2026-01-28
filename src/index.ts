@@ -54,7 +54,7 @@ app.post('/send-message', async (c) => {
 });
 
 app.get('/', (c) => {
-  return c.text('here is scraper api by')
+  return c.text('scraper api')
 })
 
 app.get('/health', (c) => {
