@@ -102,36 +102,98 @@ app.post('/scrape/instagram/tagged',
 });
 
 app.post('/webhooks/instagram/tagged', async (c) => {
-  // get params
-  const client_webhook = c.req.query('client_webhook');
-  const account_name = c.req.query('account_name');
-  const extras_param = c.req.query('extras');
+  try {
+    const client_webhook = c.req.query('client_webhook');
+    const account_name = c.req.query('account_name');
+    const extras_param = c.req.query('extras');
 
-  const payload_resp:InstagramPost_gd_lk5ns7kz21pck8jpis[] = await c.req.json();
-  const validPayload = payload_resp.filter(item => item?.url);
-  const convertedData = validPayload.map(typeConverterV2);
-  const payload ={
-    account_name,
-    date_scraped: new Date().toISOString(),
-    posts: convertedData,
-    extras: extras_param ? JSON.parse(extras_param) : {},
-  }
+    // Check content-length header
+    const contentLength = c.req.header('content-length');
+    if (contentLength && parseInt(contentLength) > 10_000_000) {
+      return c.json({ 
+        success: false, 
+        error: 'Payload too large (max 10MB)' 
+      }, 413);
+    }
 
-  if (client_webhook) {
+    let payload_resp: InstagramPost_gd_lk5ns7kz21pck8jpis[];
     
-      // assume always successful
+    try {
+      payload_resp = await c.req.json();
+    } catch (parseError) {
+      const errorMessage = parseError instanceof Error 
+        ? parseError.message 
+        : 'Unknown parsing error';
       
-      await fetch(client_webhook, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-  } 
-  
-  return c.json({ success: true, message: 'Data received'});
-  
+      console.error('JSON parse error:', parseError);
+      return c.json({ 
+        success: false, 
+        error: 'Invalid JSON payload',
+        details: errorMessage 
+      }, 400);
+    }
+
+    if (!Array.isArray(payload_resp)) {
+      return c.json({ 
+        success: false, 
+        error: 'Payload must be an array' 
+      }, 400);
+    }
+
+    const validPayload = payload_resp.filter(item => item?.url);
+    const convertedData = validPayload.map(typeConverterV2);
+    
+    const payload = {
+      account_name,
+      date_scraped: new Date().toISOString(),
+      posts: convertedData,
+      extras: extras_param ? JSON.parse(extras_param) : {},
+    };
+
+    if (client_webhook) {
+      // Don't await - fire and forget to avoid timeout
+      c.executionCtx.waitUntil(
+        fetch(client_webhook, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }).catch(err => {
+          const errorMessage = err instanceof Error 
+            ? err.message 
+            : 'Unknown webhook delivery error';
+          console.error('Webhook delivery failed:', errorMessage);
+        })
+      );
+    }
+
+    return c.json({ 
+      success: true, 
+      message: 'Data received',
+      processed: convertedData.length 
+    });
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'An unexpected error occurred';
+    
+    const errorStack = error instanceof Error 
+      ? error.stack 
+      : undefined;
+    
+    console.error('Unexpected error:', {
+      message: errorMessage,
+      stack: errorStack,
+      error
+    });
+    
+    return c.json({ 
+      success: false, 
+      error: errorMessage 
+    }, 500);
+  }
 });
 
 app.get('/', (c) => {

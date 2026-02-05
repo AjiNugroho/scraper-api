@@ -8,7 +8,7 @@
     "port": 8000
   },
   "vars": {
-    "APP_PUBLIC_URL":"https://9924b856b261.ngrok-free.app",
+    "APP_PUBLIC_URL":"https://cfw_api.cancodeaji.workers.dev",
   },
   
   "observability": {
