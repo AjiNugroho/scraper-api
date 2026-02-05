@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import * as z from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { InstagramPost_gd_lk5ns7kz21pck8jpis } from '../types/intagram_posts_gd_lk5ns7kz21pck8jpis';
+import { typeConverterV2 } from './helper';
 
 
 type Bindings = {
@@ -15,7 +16,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 const itemSchema =z.object({
     data_size:z.number().min(1),
-    account_name:z.string().optional(),
+    identifier:z.string(),
     date_start:z.string().optional(),
     date_end:z.string().optional(),
   });
@@ -50,8 +51,8 @@ app.post('/scrape/instagram/tagged',
     const extras_input = messages.extras || {};
     const messages_input = messages.data;
     const msgSends = messages_input.map(msg => {
-      const tagged_url = `https://www.instagram.com/${msg.account_name}/tagged`;
-      const scraper_webhook = `${c.env.APP_PUBLIC_URL}/webhooks/instagram/tagged?account_name=${msg.account_name}&client_webhook=${webhook_input}&extras=${encodeURIComponent(JSON.stringify(extras_input))}`;
+      const tagged_url = `https://www.instagram.com/${msg.identifier}/tagged`;
+      const scraper_webhook = `${c.env.APP_PUBLIC_URL}/webhooks/instagram/tagged?account_name=${msg.identifier}&client_webhook=${webhook_input}&extras=${encodeURIComponent(JSON.stringify(extras_input))}`;
       
       const payload_args = {
         url: tagged_url,
@@ -107,11 +108,12 @@ app.post('/webhooks/instagram/tagged', async (c) => {
   const extras_param = c.req.query('extras');
 
   const payload_resp:InstagramPost_gd_lk5ns7kz21pck8jpis[] = await c.req.json();
-
+  const validPayload = payload_resp.filter(item => item?.url);
+  const convertedData = validPayload.map(typeConverterV2);
   const payload ={
     account_name,
     date_scraped: new Date().toISOString(),
-    posts: payload_resp,
+    posts: convertedData,
     extras: extras_param ? JSON.parse(extras_param) : {},
   }
 

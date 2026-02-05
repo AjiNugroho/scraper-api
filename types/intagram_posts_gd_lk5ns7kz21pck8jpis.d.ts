@@ -37,6 +37,7 @@ interface IPostContentItem {
     type?: "Photo" | "Video" | string | null;
     url?: string | null; // type: url
     id?: string | null;
+    alt_text?: string | null;
 }
 
 interface IAudio {
@@ -96,4 +97,6 @@ export type InstagramPost_gd_lk5ns7kz21pck8jpis ={
     images?: IImage[] | null; 
     alt_text?: string | null; 
     photos_number?: number | null; 
+    audio_url?: string | null;
+    timestamps?: string|null;
 }
