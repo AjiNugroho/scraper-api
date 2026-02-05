@@ -9,7 +9,15 @@
   },
   "vars": {
     "APP_PUBLIC_URL":"https://9924b856b261.ngrok-free.app",
-  }
+  },
+  
+  "observability": {
+    "logs": {
+      "enabled": false,
+      "invocation_logs": true
+    }
+  
+}
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],
