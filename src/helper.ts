@@ -306,3 +306,24 @@ export const typeConverterV2 = (initial: InstagramPost_gd_lk5ns7kz21pck8jpis): C
         images: images_processed
     };
 };
+
+
+// Helper function to safely extract error message
+export const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    return 'An unexpected error occurred';
+};
+  
+  // Helper function for logging error details
+export const logError = (context: string, error: unknown): void => {
+    if (error instanceof Error) {
+        console.error(context, {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+        });
+    } else {
+        console.error(context, { error: String(error) });
+    }
+};

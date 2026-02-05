@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import * as z from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { InstagramPost_gd_lk5ns7kz21pck8jpis } from '../types/intagram_posts_gd_lk5ns7kz21pck8jpis';
-import { typeConverterV2 } from './helper';
+import { getErrorMessage, logError, typeConverterV2 } from './helper';
 
 
 type Bindings = {
@@ -107,51 +107,33 @@ app.post('/webhooks/instagram/tagged', async (c) => {
     const account_name = c.req.query('account_name');
     const extras_param = c.req.query('extras');
 
-    // Check content-length header
-    const contentLength = c.req.header('content-length');
-    if (contentLength && parseInt(contentLength) > 10_000_000) {
-      return c.json({ 
-        success: false, 
-        error: 'Payload too large (max 10MB)' 
-      }, 413);
-    }
+    // Parse request body
+    const payload_resp: InstagramPost_gd_lk5ns7kz21pck8jpis[] = await c.req.json();
 
-    let payload_resp: InstagramPost_gd_lk5ns7kz21pck8jpis[];
-    
-    try {
-      payload_resp = await c.req.json();
-    } catch (parseError) {
-      const errorMessage = parseError instanceof Error 
-        ? parseError.message 
-        : 'Unknown parsing error';
-      
-      console.error('JSON parse error:', parseError);
-      return c.json({ 
-        success: false, 
-        error: 'Invalid JSON payload',
-        details: errorMessage 
-      }, 400);
-    }
-
-    if (!Array.isArray(payload_resp)) {
-      return c.json({ 
-        success: false, 
-        error: 'Payload must be an array' 
-      }, 400);
-    }
-
+    // Process data
     const validPayload = payload_resp.filter(item => item?.url);
     const convertedData = validPayload.map(typeConverterV2);
     
+    // Parse extras safely
+    let extras = {};
+    if (extras_param) {
+      try {
+        extras = JSON.parse(extras_param);
+      } catch (extrasError) {
+        logError('Extras parse error:', extrasError);
+      }
+    }
+
+    // Build final payload
     const payload = {
-      account_name,
+      account_name: account_name ?? null,
       date_scraped: new Date().toISOString(),
       posts: convertedData,
-      extras: extras_param ? JSON.parse(extras_param) : {},
+      extras,
     };
 
+    // Send webhook asynchronously (fire and forget)
     if (client_webhook) {
-      // Don't await - fire and forget to avoid timeout
       c.executionCtx.waitUntil(
         fetch(client_webhook, {
           method: 'POST',
@@ -160,10 +142,7 @@ app.post('/webhooks/instagram/tagged', async (c) => {
           },
           body: JSON.stringify(payload)
         }).catch(err => {
-          const errorMessage = err instanceof Error 
-            ? err.message 
-            : 'Unknown webhook delivery error';
-          console.error('Webhook delivery failed:', errorMessage);
+          logError('Webhook delivery failed:', err);
         })
       );
     }
@@ -175,23 +154,11 @@ app.post('/webhooks/instagram/tagged', async (c) => {
     });
     
   } catch (error) {
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'An unexpected error occurred';
-    
-    const errorStack = error instanceof Error 
-      ? error.stack 
-      : undefined;
-    
-    console.error('Unexpected error:', {
-      message: errorMessage,
-      stack: errorStack,
-      error
-    });
+    logError('Unexpected error:', error);
     
     return c.json({ 
       success: false, 
-      error: errorMessage 
+      error: getErrorMessage(error)
     }, 500);
   }
 });
