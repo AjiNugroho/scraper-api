@@ -1,4 +1,4 @@
-import { InstagramPost_gd_lk5ns7kz21pck8jpis } from "../types/intagram_posts_gd_lk5ns7kz21pck8jpis";
+import { InstagramPost_gd_lk5ns7kz21pck8jpis } from "../../types/intagram_posts_gd_lk5ns7kz21pck8jpis";
 type comment_type ={
     comments:string;
     user_commenting:string;

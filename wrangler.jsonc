@@ -9,6 +9,9 @@
   },
   "vars": {
     "APP_PUBLIC_URL":"https://cfw_api.cancodeaji.workers.dev",
+    "BETTER_AUTH_SECRET":"zFrnPimh8ORljbPZlamM0Zpr6z759x3u",
+    "BETTER_AUTH_URL":"http://localhost:8000" ,
+    "DATABASE_URL":"postgresql://neondb_owner:npg_5nt7pyRIwlXL@ep-old-surf-a18bm8fs-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
   },
   
   "observability": {

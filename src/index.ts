@@ -2,17 +2,9 @@ import { Hono } from 'hono'
 import * as z from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { InstagramPost_gd_lk5ns7kz21pck8jpis } from '../types/intagram_posts_gd_lk5ns7kz21pck8jpis';
-import { getErrorMessage, logError, typeConverterV2 } from './helper';
+import { getErrorMessage, logError, typeConverterV2 } from './tools/helper';
 
-
-type Bindings = {
-  CLOUDAMQP_HTTP_URL:string;
-  CLOUDAMQP_USERNAME:string;
-  CLOUDAMQP_PASSWORD:string;
-  APP_PUBLIC_URL:string;
-};
-
-const app = new Hono<{ Bindings: Bindings }>();
+const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 const itemSchema =z.object({
     data_size:z.number().min(1),
