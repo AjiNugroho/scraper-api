@@ -1,14 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cfw_api",
-  "compatibility_date": "2026-01-27",
   "main": "src/index.ts",
   "minify": true,
   "dev": {
     "port": 8000
   },
   "vars": {
-    "APP_PUBLIC_URL":"https://cfw_api.cancodeaji.workers.dev",
+    "APP_PUBLIC_URL":"https://882e-182-2-40-217.ngrok-free.app",
     "BETTER_AUTH_SECRET":"zFrnPimh8ORljbPZlamM0Zpr6z759x3u",
     "BETTER_AUTH_URL":"http://localhost:8000" ,
     "DATABASE_URL":"postgresql://neondb_owner:npg_5nt7pyRIwlXL@ep-old-surf-a18bm8fs-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
@@ -20,10 +19,12 @@
       "invocation_logs": true
     }
   
-}
-  // "compatibility_flags": [
-  //   "nodejs_compat"
-  // ],
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "compatibility_date": "2026-02-09"
+  
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",
