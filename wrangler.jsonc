@@ -7,9 +7,9 @@
     "port": 8000
   },
   "vars": {
-    "APP_PUBLIC_URL":"https://882e-182-2-40-217.ngrok-free.app",
+    "APP_PUBLIC_URL":"https://api.fair-studio.com",
     "BETTER_AUTH_SECRET":"zFrnPimh8ORljbPZlamM0Zpr6z759x3u",
-    "BETTER_AUTH_URL":"http://localhost:8000" ,
+    "BETTER_AUTH_URL":"https://api.fair-studio.com" ,
     "DATABASE_URL":"postgresql://neondb_owner:npg_5nt7pyRIwlXL@ep-old-surf-a18bm8fs-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
   },
   

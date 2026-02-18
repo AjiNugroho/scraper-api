@@ -21,6 +21,7 @@ export const auth = betterAuth({
   },
   trustedOrigins:[
     'http://localhost:3000',
+    'https://api.fair-studio.com'
   ],
   plugins: [ 
     apiKey({
