@@ -5,6 +5,7 @@ import managementRoutes from './routes/management';
 import scraperRoutes from './routes/scraper';
 import webhookRoutes from './routes/webhooks';
 import workerRoutes from './routes/worker';
+import helper from './routes/helper';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -35,6 +36,7 @@ app.route('/management',managementRoutes)
 app.route('/scrape',scraperRoutes)
 app.route('/webhooks',webhookRoutes)
 app.route('/worker',workerRoutes)
+app.route('/helper',helper)
 
 
 // 404 handler
