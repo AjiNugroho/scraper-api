@@ -8,6 +8,7 @@ import {
   index,
   uuid,
   jsonb,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -186,5 +187,23 @@ export const WebhookClientLog = pgTable("webhook_client_log", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
+export const tiktokScrapingRequests = pgTable("tiktok_scraping_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hashtag: text("hashtag").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const tiktokScrapedVideos = pgTable(
+  "tiktok_scraped_videos",
+  {
+    hashtag: text("hashtag").notNull(),
+    url_string: text("url_string").notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.hashtag, table.url_string],
+    }),
+  })
+);
 
 export const schema = {user,session,account,verification,apikey};

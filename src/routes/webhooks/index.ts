@@ -1,7 +1,12 @@
 import { Hono } from 'hono';
 import { InstagramPost_gd_lk5ns7kz21pck8jpis } from '../../../types/intagram_posts_gd_lk5ns7kz21pck8jpis';
-import { getErrorMessage, logError, typeConverterV2 } from '../../tools/helper';
+import { getErrorMessage, logError, mapTikTokToConvertedPost, typeConverterV2 } from '../../tools/helper';
 import { logWebhookClientRequest } from '../../services/transactionLogger';
+import { tiktok_posts_gd_lu702nij2f790tmv9h } from '../../../types/tiktok_posts_gd_lu702nij2f790tmv9h';
+
+interface CloudflareBindings {
+  WEBHOOK_URL_FAIR: string;
+}
 
 const webhooks = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -85,6 +90,47 @@ webhooks.post('/instagram/tagged', async (c) => {
         error: getErrorMessage(error)
       }, 500);
     }
-  });
+});
+
+webhooks.post('/tiktok/videos', async (c) => {
+
+  const payload_resp:tiktok_posts_gd_lu702nij2f790tmv9h[] = await c.req.json();
+  
+  const validPayload = payload_resp.filter(item => item?.url);
+  const convertedData = validPayload.map(mapTikTokToConvertedPost);
+  // read client webhook from environtment variable
+  const client_webhook = c.env.WEBHOOK_URL_FAIR;
+
+  console.log(client_webhook)
+
+  console.log(convertedData[0])
+
+  const payload = {
+        posts: convertedData
+  }
+
+  try {
+    await fetch(client_webhook, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    return c.json({ 
+        success: true, 
+        message: 'Data received',
+        processed: convertedData.length
+    });
+  } catch (error) {
+      logError('Unexpected error:', error);
+      
+      return c.json({ 
+        success: false, 
+        error: getErrorMessage(error)
+      }, 500);
+    }  
+})
 
 export default webhooks;

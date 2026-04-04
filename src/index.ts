@@ -6,6 +6,8 @@ import scraperRoutes from './routes/scraper';
 import webhookRoutes from './routes/webhooks';
 import workerRoutes from './routes/worker';
 import helper from './routes/helper';
+import scraperTiktok, { dispacthItemScrapingJob, dispatchScrapingJob } from './routes/scraper_tiktok';
+import { AppEnv } from '../types/Env_types';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -37,6 +39,7 @@ app.route('/scrape',scraperRoutes)
 app.route('/webhooks',webhookRoutes)
 app.route('/worker',workerRoutes)
 app.route('/helper',helper)
+app.route('/scrape_tiktok',scraperTiktok)
 
 
 // 404 handler
@@ -50,4 +53,29 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal server error' }, 500);
 });
 
-export default app
+export default {
+	  fetch: app.fetch,
+	//   async scheduled(
+    // 	_event: ScheduledEvent,
+	// 	env: AppEnv,
+	// 	_ctx: ExecutionContext
+	// ): Promise<void> {
+
+	// 	switch (_event.cron) {
+	// 		case "0 23 * * *": // 6 AM UTC+7
+	// 		case "0 7 * * *":  // 2 PM UTC+7
+	// 		case "0 15 * * *":  // 10 PM UTC+7
+	// 			console.log(`[cron] Scheduled trigger fired at ${new Date().toISOString()}`);
+	// 			const result = await dispatchScrapingJob(env)
+	// 			console.log(`[cron] ${result.message}`);
+	// 			break;
+	// 		case "0 15 * * 3":
+	// 			console.log(`[cron] Scheduled item scraping trigger fired at ${new Date().toISOString()}`);
+	// 			const resultItem = await dispacthItemScrapingJob(env)
+	// 			console.log(`[cron] ${resultItem.message}`);
+	// 			break;
+	// 		default:
+	// 			console.warn(`[cron] Unhandled cron schedule: ${_event.cron}`);
+	// 	}
+	// }
+}

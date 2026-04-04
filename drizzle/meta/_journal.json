@@ -15,6 +15,20 @@
       "when": 1771045669043,
       "tag": "0001_wooden_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775209261227,
+      "tag": "0002_careful_mathemanic",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775210187945,
+      "tag": "0003_wandering_vapor",
+      "breakpoints": true
     }
   ]
 }

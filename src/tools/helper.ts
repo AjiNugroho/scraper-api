@@ -1,4 +1,5 @@
 import { InstagramPost_gd_lk5ns7kz21pck8jpis } from "../../types/intagram_posts_gd_lk5ns7kz21pck8jpis";
+import { tiktok_posts_gd_lu702nij2f790tmv9h } from "../../types/tiktok_posts_gd_lu702nij2f790tmv9h";
 type comment_type ={
     comments:string;
     user_commenting:string;
@@ -306,6 +307,148 @@ export const typeConverterV2 = (initial: InstagramPost_gd_lk5ns7kz21pck8jpis): C
         images: images_processed
     };
 };
+
+export function mapTikTokToConvertedPost(
+  input: tiktok_posts_gd_lu702nij2f790tmv9h
+): ConvertedPostOutputType {
+  const hashtags = input.hashtags ?? null;
+
+  const videos = input.video_url ? [input.video_url] : null;
+  const photos = input.carousel_images ?? null;
+
+  const taggedUsers: tagged_user[] | null =
+    input.tagged_user?.map((u) => ({
+      full_name: u.user_name ?? null,
+      id: u.user_id ?? null,
+      username: u.user_handle ?? null,
+      profile_pic_url: null,
+      is_verified: null,
+    })) ?? null;
+
+  const audio = input.music
+    ? {
+        audio_asset_id: input.music.id ?? null,
+        original_audio_title: input.music.title ?? null,
+        username: input.music.authorname ?? null,
+        artist_id: null,
+      }
+    : null;
+
+  const videosDuration: video_duration[] | null = input.video_url
+    ? [
+        {
+          url: input.video_url,
+          duration: input.video_duration ?? null,
+        },
+      ]
+    : null;
+
+  const images: image[] | null =
+    input.carousel_images?.map((url, idx) => ({
+      url,
+      id: `${input.post_id ?? "img"}_${idx}`,
+    })) ?? null;
+
+  const postContent: content[] | null = (() => {
+    const arr = [
+        ...(videos?.map((url, idx) => ({
+        index: idx,
+        type: "video",
+        url,
+        id: input.post_id ?? null,
+        alt_text: null,
+        })) ?? []),
+        ...(photos?.map((url, idx) => ({
+        index: idx,
+        type: "image",
+        url,
+        id: `${input.post_id ?? "img"}_${idx}`,
+        alt_text: null,
+        })) ?? []),
+    ];
+
+    return arr.length ? arr : null;
+    })();
+
+  return {
+    url: input.url,
+
+    user_posted: input.profile_username ?? null,
+    user_posted_id: input.profile_id ?? null,
+
+    description: input.description ?? null,
+    hashtags,
+
+    num_comments: input.comment_count ?? 0,
+    shared: Number(input.share_count ?? 0),
+    saved: input.collect_count ?? 0,
+    likes: input.digg_count ?? 0,
+
+    date_posted: input.create_time ?? "",
+    timestamp: input.create_time ?? "",
+
+    photos,
+    videos,
+
+    latest_comments: null, // not available in source
+
+    post_id: input.post_id ?? null,
+    shortcode: input.shortcode ?? null,
+
+    content_type: input.post_type ?? null,
+
+    pk: input.post_id ?? null,
+    content_id: input.post_id ?? null,
+
+    engagement_score_view: 0, // compute later if needed
+
+    thumbnail: input.preview_image ?? null,
+
+    video_view_count: input.play_count ?? 0,
+    video_play_count: input.play_count ?? 0,
+
+    product_type: null,
+
+    tagged_users: taggedUsers,
+
+    followers: input.profile_followers ?? 0,
+    posts_count: 0, // not provided
+
+    profile_image_link: input.profile_avatar ?? null,
+
+    is_verified: input.is_verified ?? null,
+
+    is_paid_partnership: input.commerce_info ? true : false,
+
+    partnership_details: input.commerce_info
+      ? {
+          profile_id: null,
+          username: null,
+          profile_url: null,
+        }
+      : null,
+
+    profile_url: input.profile_url ?? null,
+
+    post_content: postContent,
+
+    audio,
+
+    videos_duration: videosDuration,
+
+    images,
+
+    alt_text: null,
+
+    photos_number: photos?.length ?? null,
+
+    audio_url: input.music?.playurl ?? null,
+
+    input: {
+      url: input.url,
+    },
+  };
+}
 
 
 // Helper function to safely extract error message
