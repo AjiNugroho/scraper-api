@@ -1,13 +1,12 @@
-import { Context } from "hono";
-import { Bindings } from "hono/types";
 import { AppEnv } from "../../types/Env_types";
 
 export interface QueueMessage {
   hashtag: string;
+  id:string;
 }
 
 
-export const sendToQueue = async(env: AppEnv, {hashtag}: QueueMessage)=>{
+export const sendToQueue = async(env: AppEnv, msg: QueueMessage)=>{
     // send via http 
     const httpUrl = env.CLOUDAMQP_HTTP_URL;
     const amqpUser = env.CLOUDAMQP_USERNAME;
@@ -20,7 +19,7 @@ export const sendToQueue = async(env: AppEnv, {hashtag}: QueueMessage)=>{
 
     const payloadMsg = JSON.stringify({
         "task":"scrape_hashtag",
-        "args": [hashtag]
+        "args": [msg.hashtag, msg.id]
       })
 
     return fetch(httpUrl, {

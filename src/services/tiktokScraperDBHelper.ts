@@ -1,35 +1,80 @@
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "../db/drizzle"
-import { tiktokScrapedVideos, tiktokScrapingRequests } from "../db/schema"
+import { tiktokHashTagListingVideos, tiktokScrapingRequests } from "../db/schema"
 
-export const insertTikTokScrapingRequest = async (hashtag: string) => {
+interface ScraperRequestLog {
+    keyName: string;
+    scraper:string;
+    identifier:string;
+    webhook_url:string;
+    requestDataMsg:string;
+    extras?:string;
+    request_group_id?:string;
+    request_data_id?:string;
+}
 
-    const [response] = await db.insert(tiktokScrapingRequests).values({
-        hashtag
-    }).returning()
+export const insertTikTokScrapingRequest = async (req: ScraperRequestLog) => {
+
+    const response = await db.insert(tiktokScrapingRequests).values(req)
 
     return response;
 }
 
 export const getTiktokScrapingRequestList = async () => {
 
-    const response = await db.select().from(tiktokScrapingRequests);
+    const response = await db.select({
+        id:tiktokScrapingRequests.id,
+        hashtag:tiktokScrapingRequests.identifier,
+
+    }).from(tiktokScrapingRequests);
 
     return response;
 }
 
-export const deleteTiktokScrapingRequestById = async (id: string) => {
+export const getTiktokScrapingRequestByID = async (id: string) => {
 
-    await db.delete(tiktokScrapingRequests).where(
-        eq(
-        tiktokScrapingRequests.id,(id)
-    ));
+    const [response] = await db.select().from(tiktokScrapingRequests).where(
+        sql`${tiktokScrapingRequests.id} = ${id}`
+    );
 
-    return { status: "ok", message: `Hashtag scraping request with ID ${id} has been deleted` };
+    return response;
 }
 
-export const getTiktokScrapedVideosListAll = async () => {
-    
-    const response = await db.select().from(tiktokScrapedVideos);
+export const getTiktokListingVideosAll = async () => {
+
+    const response = await db.select().from(tiktokHashTagListingVideos);
     return response;
+}
+
+
+export const getTiktokListingVideosWithWebhook = async () => {
+    const result = await db
+    .select({
+        id: tiktokScrapingRequests.id,
+        videos: sql<{ url: string }[]>`
+        COALESCE(
+            json_agg(
+            json_build_object('url', v.video_url)
+            ORDER BY v.created_at DESC
+            ),
+            '[]'
+        )
+        `,
+    })
+    .from(tiktokScrapingRequests)
+    .leftJoin(
+        sql`
+        (
+            SELECT DISTINCT ON (request_id, video_url)
+            request_id,
+            video_url,
+            created_at
+            FROM ${tiktokHashTagListingVideos}
+            ORDER BY request_id, video_url, created_at DESC
+        ) AS v
+        `,
+        sql`v.request_id = ${tiktokScrapingRequests.id}`
+    )
+    .groupBy(tiktokScrapingRequests.id);
+    return result;
 }

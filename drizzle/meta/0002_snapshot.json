@@ -1,6 +1,6 @@
 {
-  "id": "46ecb354-20fd-4961-9896-138e4e02ed15",
-  "prevId": "608776b6-a692-49d7-992a-5ef50a085612",
+  "id": "00690fe3-b13b-4fcb-9908-08b5181328df",
+  "prevId": "e7212bbc-d7fc-4661-85cb-eb5ee5779cdb",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -646,8 +646,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.tiktok_scraping_requests": {
-      "name": "tiktok_scraping_requests",
+    "public.tiktok_hashtag_listing_videos": {
+      "name": "tiktok_hashtag_listing_videos",
       "schema": "",
       "columns": {
         "id": {
@@ -657,8 +657,20 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "hashtag": {
           "name": "hashtag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "video_url": {
+          "name": "video_url",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -671,7 +683,153 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "uq_request_hashtag_video": {
+          "name": "uq_request_hashtag_video",
+          "columns": [
+            {
+              "expression": "request_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hashtag",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "video_url",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tiktok_hashtag_listing_videos_request_id_tiktok_scraping_requests_id_fk": {
+          "name": "tiktok_hashtag_listing_videos_request_id_tiktok_scraping_requests_id_fk",
+          "tableFrom": "tiktok_hashtag_listing_videos",
+          "tableTo": "tiktok_scraping_requests",
+          "columnsFrom": [
+            "request_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tiktok_scraping_requests": {
+      "name": "tiktok_scraping_requests",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "key_name": {
+          "name": "key_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scraper": {
+          "name": "scraper",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "webhook_url": {
+          "name": "webhook_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_data_msg": {
+          "name": "request_data_msg",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_group_id": {
+          "name": "request_group_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "request_data_id": {
+          "name": "request_data_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "extras": {
+          "name": "extras",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "uq_identifier_group_data": {
+          "name": "uq_identifier_group_data",
+          "columns": [
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "request_group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "request_data_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"tiktok_scraping_requests\".\"request_group_id\" != '' AND \"tiktok_scraping_requests\".\"request_data_id\" != ''",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},

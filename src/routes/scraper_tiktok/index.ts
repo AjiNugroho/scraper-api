@@ -1,19 +1,28 @@
-import { Context, Hono } from 'hono';
+import { Hono } from 'hono';
 import {z} from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { apiKeyAuth } from '../../middlewares/api-key';
-import { deleteTiktokScrapingRequestById, getTiktokScrapedVideosListAll, getTiktokScrapingRequestList, insertTikTokScrapingRequest } from '../../services/tiktokScraperDBHelper';
+import { getTiktokListingVideosWithWebhook, getTiktokScrapingRequestList, insertTikTokScrapingRequest } from '../../services/tiktokScraperDBHelper';
 import { sendToQueue } from '../../services/tiktokScraperQueueHelper';
 import { scrapeVideosByUrl } from '../../services/brightDataScraperHelper';
 import { AppEnv } from '../../../types/Env_types';
 
-const inputSchema = z.object({
-    hashtag: z.string().min(1),
-})
-
 type Variables ={
   apiKeyName:string;
 }
+
+const itemSchema =z.object({
+    identifier:z.string(),
+    date_start:z.string().optional(),
+    date_end:z.string().optional(),
+    data_size:z.number().optional(),
+});
+
+const inputSchema = z.object({
+  webhook_url:z.url().optional(),
+  extras:z.record(z.string(), z.any()).optional(),
+  data:z.array(itemSchema).min(1).max(50),
+})
 
 const scraperTiktok = new Hono<{ Bindings: AppEnv,Variables:Variables }>();
 
@@ -25,36 +34,39 @@ scraperTiktok.post('/hashtag',
 zValidator('json', inputSchema),
 async (c) => {
   try {
-    const {hashtag} = c.req.valid('json');
-    const insertResp = await insertTikTokScrapingRequest(hashtag);
+    const messages = c.req.valid('json');
+
+    const webhook_input = messages.webhook_url;
+    const messages_input = messages.data;
+    const extras_input = messages.extras || {};
+
+    const request_group_id = extras_input.request_group_id || '';
+    const request_data_id = extras_input.request_data_id || '';
+
+    for (const msg of messages_input) {
+
+        
+        const requestData={
+            keyName:c.get('apiKeyName') || 'unknown',
+            scraper:'tiktok_hashtag',
+            identifier:msg.identifier,
+            webhook_url:webhook_input || '',
+            requestDataMsg:JSON.stringify(msg),
+            extras:JSON.stringify(extras_input),
+            request_group_id,
+            request_data_id
+        }
+        await insertTikTokScrapingRequest(requestData);
+    }
+
     return c.json({ 
         status: 'ok', 
         message: 'Hashtag scraping request received',
-        data: insertResp
+        data: { sent_messages: messages_input.length }
     });
   } catch (error) {
     return c.json({ error: 'Invalid input' }, 400);
   }
-})
-
-// get all listed hashtag scraping request
-scraperTiktok.get('/hashtag', async(c)=>{
-    const requestList = await getTiktokScrapingRequestList();
-    return c.json({ 
-        status: 'ok', 
-        message: 'Hashtag scraping request list retrieved',
-        data: requestList
-    });
-})
-
-// delete a listed hashtag scraping request by name
-scraperTiktok.delete('/hashtag/:id', async(c)=>{
-    const { id } = c.req.param();
-    const deleteResult = await deleteTiktokScrapingRequestById(id);
-    return c.json({
-        status: 'ok',
-        message: deleteResult.message
-    });
 })
 
 
@@ -84,7 +96,12 @@ export const dispatchScrapingJob = async(env: AppEnv) =>{
 
     for(let i=0; i<requestList.length; i+=batchSize){
         const batch = requestList.slice(i, i+batchSize);
-        await Promise.all(batch.map(request => sendToQueue(env, { hashtag: request.hashtag })));
+        await Promise.all(batch.map(request => sendToQueue(env, { 
+            hashtag: request.hashtag||'',
+            id: request.id,
+        }
+            
+        )));
         dispatchedCount += batch.length;
     }
 
@@ -94,23 +111,28 @@ export const dispatchScrapingJob = async(env: AppEnv) =>{
 
 export const dispacthItemScrapingJob = async(env: AppEnv) => {
   // get all tiktok scraped url list
-  const urlList = await getTiktokScrapedVideosListAll();
+
+  const listingData = await getTiktokListingVideosWithWebhook();
   
-  if(urlList.length === 0){
+  if(listingData.length === 0){
       return { dispatched: 0, message: "No scraped videos urls found" };
   }
 
-  const batchSize = 50;
-  let dispatchedCount = 0;
+  for(const data of listingData){
+    console.log(`Request ID: ${data.id}, Videos: ${data.videos.length}`);
+    
+    const batchSize = 50;
+    let dispatchedCount = 0;
+    
+    for(let i=0; i<data.videos.length; i+=batchSize){
+        const batch = data.videos.slice(i, i+batchSize);
+        const webhook_internal_scraper = `${env.WEBHOOK_URL}?request_id=${data.id}`;
+        const urls = batch.map(item => item.url);
+        await scrapeVideosByUrl(env, urls, webhook_internal_scraper);
+        dispatchedCount += batch.length;
+    }}
 
-  for(let i=0; i<urlList.length; i+=batchSize){
-      const batch = urlList.slice(i, i+batchSize);
-      const urls = batch.map(item => item.url_string);
-      await scrapeVideosByUrl(env, urls);
-      dispatchedCount += batch.length;
-  }
-
-  return { dispatched: dispatchedCount, message: `Dispatched ${dispatchedCount} item scraping jobs to brightdata` };
+  return { dispatched: listingData.length, message: `Dispatched ${listingData.length} item scraping jobs to brightdata` };
 }
 
 export default scraperTiktok;

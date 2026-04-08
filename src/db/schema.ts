@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   pgTable,
   text,
@@ -8,7 +8,7 @@ import {
   index,
   uuid,
   jsonb,
-  primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -189,21 +189,37 @@ export const WebhookClientLog = pgTable("webhook_client_log", {
 
 export const tiktokScrapingRequests = pgTable("tiktok_scraping_requests", {
   id: uuid("id").primaryKey().defaultRandom(),
-  hashtag: text("hashtag").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull()
-});
+  keyName : text("key_name").notNull(),
+  scraper: text("scraper").notNull(),
+  identifier: text("identifier"),
+  webhook_url: text("webhook_url").notNull(),
+  requestDataMsg: jsonb("request_data_msg").notNull(),
+  request_group_id: text("request_group_id"),
+  request_data_id: text("request_data_id"),
+  extras: jsonb("extras"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+},
+(table) => [
+  uniqueIndex("uq_identifier_group_data")
+    .on(table.identifier, table.request_group_id, table.request_data_id)
+    .where(
+      sql`${table.request_group_id} != '' AND ${table.request_data_id} != ''`
+    ),
+]
 
-export const tiktokScrapedVideos = pgTable(
-  "tiktok_scraped_videos",
-  {
-    hashtag: text("hashtag").notNull(),
-    url_string: text("url_string").notNull(),
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.hashtag, table.url_string],
-    }),
-  })
+);
+
+export const tiktokHashTagListingVideos = pgTable("tiktok_hashtag_listing_videos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  requestId: uuid("request_id").notNull().references(() => tiktokScrapingRequests.id, { onDelete: "cascade" }),
+  hashtag: text("hashtag").notNull(),
+  video_url: text("video_url").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+},
+(table) => [
+  uniqueIndex("uq_request_hashtag_video")
+    .on(table.requestId, table.hashtag, table.video_url),
+]
 );
 
 export const schema = {user,session,account,verification,apikey};

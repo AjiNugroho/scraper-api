@@ -3,7 +3,7 @@ import { AppEnv } from "../../types/Env_types";
 
 
 
-export const scrapeVideosByUrl = async (env: AppEnv, urls: string[]) => {
+export const scrapeVideosByUrl = async (env: AppEnv, urls: string[], webhook_url: string) => {
 
     const data = JSON.stringify({
         input: urls.map(url => ({ url, country: "ID" })),
@@ -11,7 +11,7 @@ export const scrapeVideosByUrl = async (env: AppEnv, urls: string[]) => {
 
     const params = new URLSearchParams({
         dataset_id: "gd_lu702nij2f790tmv9h",
-        endpoint: env.WEBHOOK_URL,
+        endpoint: webhook_url,
         notify: "false",
         format: "json",
         uncompressed_webhook: "true",

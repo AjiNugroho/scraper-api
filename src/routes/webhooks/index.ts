@@ -3,6 +3,7 @@ import { InstagramPost_gd_lk5ns7kz21pck8jpis } from '../../../types/intagram_pos
 import { getErrorMessage, logError, mapTikTokToConvertedPost, typeConverterV2 } from '../../tools/helper';
 import { logWebhookClientRequest } from '../../services/transactionLogger';
 import { tiktok_posts_gd_lu702nij2f790tmv9h } from '../../../types/tiktok_posts_gd_lu702nij2f790tmv9h';
+import { getTiktokScrapingRequestByID } from '../../services/tiktokScraperDBHelper';
 
 interface CloudflareBindings {
   WEBHOOK_URL_FAIR: string;
@@ -93,20 +94,33 @@ webhooks.post('/instagram/tagged', async (c) => {
 });
 
 webhooks.post('/tiktok/videos', async (c) => {
+  const request_id = c.req.query('request_id');
+
+  // get request info
+  const requestScrapingInfo = await getTiktokScrapingRequestByID(request_id||'');
+
+  const hashTagRequested = requestScrapingInfo?.identifier || '';
+  let extras: Record<string, unknown> = {};
+  const rawExtras = requestScrapingInfo?.extras;
+  if (rawExtras) {
+    try {
+      extras = typeof rawExtras === 'string' ? JSON.parse(rawExtras) : rawExtras;
+    } catch (extrasError) {
+      logError('Extras parse error:', extrasError);
+    }
+  }
 
   const payload_resp:tiktok_posts_gd_lu702nij2f790tmv9h[] = await c.req.json();
   
   const validPayload = payload_resp.filter(item => item?.url);
   const convertedData = validPayload.map(mapTikTokToConvertedPost);
-  // read client webhook from environtment variable
-  const client_webhook = c.env.WEBHOOK_URL_FAIR;
-
-  console.log(client_webhook)
-
-  console.log(convertedData[0])
+  const client_webhook = requestScrapingInfo?.webhook_url || c.env.WEBHOOK_URL_FAIR;
 
   const payload = {
-        posts: convertedData
+    account_name: hashTagRequested,
+    date_scraped: new Date().toISOString(),
+    extras,
+    posts: convertedData
   }
 
   try {

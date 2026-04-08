@@ -5,29 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770903145103,
-      "tag": "0000_worried_red_skull",
+      "when": 1775612797631,
+      "tag": "0000_early_kingpin",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1771045669043,
-      "tag": "0001_wooden_thunderbolts",
+      "when": 1775612879130,
+      "tag": "0001_petite_captain_cross",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1775209261227,
-      "tag": "0002_careful_mathemanic",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1775210187945,
-      "tag": "0003_wandering_vapor",
+      "when": 1775618621108,
+      "tag": "0002_silent_retro_girl",
       "breakpoints": true
     }
   ]
