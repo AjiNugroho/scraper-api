@@ -116,6 +116,9 @@ webhooks.post('/tiktok/videos', async (c) => {
   const convertedData = validPayload.map(mapTikTokToConvertedPost);
   const client_webhook = requestScrapingInfo?.webhook_url || c.env.WEBHOOK_URL_FAIR;
 
+  const validCount = validPayload.length;
+  const totalCount = payload_resp.length;
+
   const payload = {
     account_name: hashTagRequested,
     date_scraped: new Date().toISOString(),
@@ -123,28 +126,38 @@ webhooks.post('/tiktok/videos', async (c) => {
     posts: convertedData
   }
 
-  try {
-    await fetch(client_webhook, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+  if (client_webhook) {
+        try {
+          const cl_resp = await fetch(client_webhook, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
 
-    return c.json({ 
-        success: true, 
-        message: 'Data received',
-        processed: convertedData.length
-    });
-  } catch (error) {
-      logError('Unexpected error:', error);
-      
-      return c.json({ 
-        success: false, 
-        error: getErrorMessage(error)
-      }, 500);
-    }  
+          const resp_status = cl_resp.status;
+          const resp_body = await cl_resp.text();
+          const error_message = cl_resp.ok ? '' : `Webhook responded with status ${resp_status}`;
+
+          const webhookLogData = {
+            webhook_url: client_webhook,
+            account_name: hashTagRequested,
+            extras,
+            total_scrape_response_count: totalCount,
+            valid_scrape_count: validCount,
+            raw_payload: payload,
+            response_status: resp_status,
+            response_body: resp_body,
+            error_message
+          }
+
+          await logWebhookClientRequest(webhookLogData);
+          
+        } catch (err) {
+          logError('Webhook delivery failed:', err);
+        }
+  }
 })
 
 export default webhooks;
