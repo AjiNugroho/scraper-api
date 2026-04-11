@@ -10,8 +10,8 @@
     "APP_PUBLIC_URL":"https://api.fair-studio.com",
     "BETTER_AUTH_SECRET":"zFrnPimh8ORljbPZlamM0Zpr6z759x3u",
     "BETTER_AUTH_URL":"https://api.fair-studio.com" ,
-    "WEBHOOK_URL":"https://5bdc-182-8-226-249.ngrok-free.app/webhooks/tiktok/videos",
-    "WEBHOOK_URL_FAIR":"https://5bdc-182-8-226-249.ngrok-free.app/webhooks/fair"
+    "WEBHOOK_URL":"https://api.fair-studio.com/webhooks/tiktok/videos",
+    "WEBHOOK_URL_FAIR":"https://api.fair-studio.com/webhooks/fair"
   },
   
   "observability": {
