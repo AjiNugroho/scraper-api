@@ -130,7 +130,7 @@ export const dispatchScrapingJob = async(env: AppEnv) =>{
     }
 
     // send to queue incrementally by 10
-    const batchSize = 10;
+    const batchSize = 5;
     let dispatchedCount = 0;
 
     for(let i=0; i<requestList.length; i+=batchSize){
