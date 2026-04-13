@@ -76,25 +76,47 @@ async (c) => {
 
 
 scraperTiktok.post('/trigger-all-listing', async(c)=>{
+  try {
     const dispatchResult = await dispatchScrapingJob(c.env);
     return c.json(dispatchResult);
+    
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error dispatching scraping job:', errMsg);
+    return c.json({ error: `Failed to dispatch scraping job: ${errMsg}` }, 500);
+  }
+    
 })
 
 scraperTiktok.post('/trigger-specific-hashtag',
   zValidator('json', hashtagSpecificInputSchema),
   async(c)=>{
-    const messages = c.req.valid('json');
-    const hashtag = messages.hashtag;
-    if(!hashtag){
-      return c.json({ error: 'Hashtag query parameter is required' }, 400);
+    try {
+        const messages = c.req.valid('json');
+          const hashtag = messages.hashtag;
+          if(!hashtag){
+            return c.json({ error: 'Hashtag query parameter is required' }, 400);
+          }
+        const dispatchResult = await dispatchScraperListingSpecificHashtagJob(c.env, hashtag);
+        return c.json(dispatchResult);
+    } catch (error) {
+        const errMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Error dispatching specific hashtag scraping job:', errMsg);
+        return c.json({ error: `Failed to dispatch specific hashtag scraping job: ${errMsg}` }, 500);
     }
-    const dispatchResult = await dispatchScraperListingSpecificHashtagJob(c.env, hashtag);
-  return c.json(dispatchResult);
+    
 })
 
 scraperTiktok.post('/trigger-item-scraping', async(c)=>{
-  const dispatchResult = await dispacthItemScrapingJob(c.env);
-  return c.json(dispatchResult);
+  try {
+    const dispatchResult = await dispacthItemScrapingJob(c.env);
+    return c.json(dispatchResult);
+  } catch (error) {
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error dispatching item scraping job:', errMsg);
+    return c.json({ error: `Failed to dispatch item scraping job: ${errMsg}` }, 500);
+  }
+  
 })
 
 
