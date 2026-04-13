@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "../db/drizzle"
 import { tiktokHashTagListingVideos, tiktokScrapingRequests } from "../db/schema"
 
@@ -27,6 +27,20 @@ export const getTiktokScrapingRequestList = async () => {
         hashtag:tiktokScrapingRequests.identifier,
 
     }).from(tiktokScrapingRequests);
+
+    return response;
+}
+
+export const getTiktokScrapingRequestByHashtag = async (hashtag: string) => {
+
+    const response = await db.select(
+        {
+            id:tiktokScrapingRequests.id,
+            hashtag:tiktokScrapingRequests.identifier,
+        }
+    ).from(tiktokScrapingRequests).where(
+        eq(tiktokScrapingRequests.identifier, hashtag)
+    );
 
     return response;
 }

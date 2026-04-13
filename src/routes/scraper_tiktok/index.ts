@@ -2,10 +2,11 @@ import { Hono } from 'hono';
 import {z} from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { apiKeyAuth } from '../../middlewares/api-key';
-import { getTiktokListingVideosWithWebhook, getTiktokScrapingRequestList, insertTikTokScrapingRequest } from '../../services/tiktokScraperDBHelper';
+import { getTiktokListingVideosWithWebhook, getTiktokScrapingRequestByHashtag, getTiktokScrapingRequestList, insertTikTokScrapingRequest } from '../../services/tiktokScraperDBHelper';
 import { sendToQueue } from '../../services/tiktokScraperQueueHelper';
 import { scrapeVideosByUrl } from '../../services/brightDataScraperHelper';
 import { AppEnv } from '../../../types/Env_types';
+import scraper from '../scraper';
 
 type Variables ={
   apiKeyName:string;
@@ -22,6 +23,10 @@ const inputSchema = z.object({
   webhook_url:z.url().optional(),
   extras:z.record(z.string(), z.any()).optional(),
   data:z.array(itemSchema).min(1).max(50),
+})
+
+const hashtagSpecificInputSchema = z.object({
+  hashtag:z.string()
 })
 
 const scraperTiktok = new Hono<{ Bindings: AppEnv,Variables:Variables }>();
@@ -70,9 +75,21 @@ async (c) => {
 })
 
 
-scraperTiktok.post('/trigger', async(c)=>{
+scraperTiktok.post('/trigger-all-listing', async(c)=>{
     const dispatchResult = await dispatchScrapingJob(c.env);
     return c.json(dispatchResult);
+})
+
+scraperTiktok.post('/trigger-specific-hashtag',
+  zValidator('json', hashtagSpecificInputSchema),
+  async(c)=>{
+    const messages = c.req.valid('json');
+    const hashtag = messages.hashtag;
+    if(!hashtag){
+      return c.json({ error: 'Hashtag query parameter is required' }, 400);
+    }
+    const dispatchResult = await dispatchScraperListingSpecificHashtagJob(c.env, hashtag);
+  return c.json(dispatchResult);
 })
 
 scraperTiktok.post('/trigger-item-scraping', async(c)=>{
@@ -108,6 +125,32 @@ export const dispatchScrapingJob = async(env: AppEnv) =>{
     return { dispatched: dispatchedCount, message: `Dispatched ${dispatchedCount} scraping jobs to the queue` };
 }
 
+export const dispatchScraperListingSpecificHashtagJob = async(env: AppEnv, hashtag: string) =>{
+  const requestList = await getTiktokScrapingRequestByHashtag(hashtag);
+
+    if(requestList.length === 0){
+        return { dispatched: 0, message: "No scraping requests found" };
+    }
+
+    // send to queue incrementally by 10
+    const batchSize = 10;
+    let dispatchedCount = 0;
+
+    for(let i=0; i<requestList.length; i+=batchSize){
+        const batch = requestList.slice(i, i+batchSize);
+        await Promise.all(batch.map(request => sendToQueue(env, { 
+            hashtag: request.hashtag||'',
+            id: request.id,
+        }
+            
+        )));
+        dispatchedCount += batch.length;
+    }
+
+    return { dispatched: dispatchedCount, message: `Dispatched ${dispatchedCount} scraping jobs to the queue` };
+
+}
+
 
 export const dispacthItemScrapingJob = async(env: AppEnv) => {
   // get all tiktok scraped url list
@@ -134,5 +177,6 @@ export const dispacthItemScrapingJob = async(env: AppEnv) => {
 
   return { dispatched: listingData.length, message: `Dispatched ${listingData.length} item scraping jobs to brightdata` };
 }
+
 
 export default scraperTiktok;
