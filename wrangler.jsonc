@@ -16,9 +16,10 @@
   
   "observability": {
     "logs": {
-      "enabled": false,
+      "enabled": true,
       "invocation_logs": true
-    }
+    },
+    "traces": {}
   
   },
   "compatibility_flags": [
@@ -57,11 +58,11 @@
   // "ai": {
   //   "binding": "AI"
   // },
-  "observability": {
-    "logs": {
-      "enabled": true,
-      "invocation_logs": true
-    },
-    "traces": {}
-  }
+  // "observability": {
+  //   "logs": {
+  //     "enabled": true,
+  //     "invocation_logs": true
+  //   },
+  //   "traces": {}
+  // }
 }
