@@ -121,31 +121,36 @@ scraperTiktok.post('/trigger-item-scraping', async(c)=>{
 
 
 
-export const dispatchScrapingJob = async(env: AppEnv) =>{
+export const dispatchScrapingJob = async(env: AppEnv) => {
     // get tiktok scraping request list
     const requestList = await getTiktokScrapingRequestList();
-
+ 
     if(requestList.length === 0){
         return { dispatched: 0, message: "No scraping requests found" };
     }
-
+ 
     // send to queue incrementally by 10
     const batchSize = 5;
     let dispatchedCount = 0;
-
+ 
     for(let i=0; i<requestList.length; i+=batchSize){
         const batch = requestList.slice(i, i+batchSize);
-        await Promise.all(batch.map(request => sendToQueue(env, { 
-            hashtag: request.hashtag||'',
-            id: request.id,
-        }
-            
-        )));
+        
+        await Promise.all(
+            batch.map(request => sendToQueue(env, { 
+                hashtag: request.hashtag || '',
+                id: request.id,
+            }))
+        );
+        
         dispatchedCount += batch.length;
     }
-
-    return { dispatched: dispatchedCount, message: `Dispatched ${dispatchedCount} scraping jobs to the queue` };
-}
+ 
+    return { 
+        dispatched: dispatchedCount, 
+        message: `Dispatched ${dispatchedCount} scraping jobs to the queue` 
+    };
+};
 
 export const dispatchScraperListingSpecificHashtagJob = async(env: AppEnv, hashtag: string) =>{
   const requestList = await getTiktokScrapingRequestByHashtag(hashtag);
@@ -155,7 +160,7 @@ export const dispatchScraperListingSpecificHashtagJob = async(env: AppEnv, hasht
     }
 
     // send to queue incrementally by 10
-    const batchSize = 10;
+    const batchSize = 5;
     let dispatchedCount = 0;
 
     for(let i=0; i<requestList.length; i+=batchSize){
