@@ -122,87 +122,103 @@ scraperTiktok.post('/trigger-item-scraping', async(c)=>{
 
 
 export const dispatchScrapingJob = async(env: AppEnv) => {
+
+  try{
     // get tiktok scraping request list
-    const requestList = await getTiktokScrapingRequestList();
+      const requestList = await getTiktokScrapingRequestList();
+  
+      if(requestList.length === 0){
+          return { dispatched: 0, message: "No scraping requests found" };
+      }
+  
+      // send to queue incrementally by 10
+      const batchSize = 5;
+      let dispatchedCount = 0;
+  
+      for(let i=0; i<requestList.length; i+=batchSize){
+          const batch = requestList.slice(i, i+batchSize);
+          
+          await Promise.all(
+              batch.map(request => sendToQueue(env, { 
+                  hashtag: request.hashtag || '',
+                  id: request.id,
+              }))
+          );
+          
+          dispatchedCount += batch.length;
+      }
  
-    if(requestList.length === 0){
-        return { dispatched: 0, message: "No scraping requests found" };
-    }
- 
-    // send to queue incrementally by 10
-    const batchSize = 5;
-    let dispatchedCount = 0;
- 
-    for(let i=0; i<requestList.length; i+=batchSize){
-        const batch = requestList.slice(i, i+batchSize);
-        
-        await Promise.all(
-            batch.map(request => sendToQueue(env, { 
-                hashtag: request.hashtag || '',
-                id: request.id,
-            }))
-        );
-        
-        dispatchedCount += batch.length;
-    }
- 
-    return { 
-        dispatched: dispatchedCount, 
-        message: `Dispatched ${dispatchedCount} scraping jobs to the queue` 
-    };
+      return { 
+          dispatched: requestList.length, 
+          message: `Dispatched ${requestList.length} scraping jobs to the queue` 
+      };
+    }catch(error){
+      console.error('Error in dispatchScrapingJob:', error instanceof Error ? error.message : error);
+      return { dispatched: 0, message: `Error dispatching scraping job: ${error instanceof Error ? error.message : 'Unknown error'}` };
+  }
 };
 
 export const dispatchScraperListingSpecificHashtagJob = async(env: AppEnv, hashtag: string) =>{
-  const requestList = await getTiktokScrapingRequestByHashtag(hashtag);
 
-    if(requestList.length === 0){
-        return { dispatched: 0, message: "No scraping requests found" };
-    }
-
-    // send to queue incrementally by 10
-    const batchSize = 5;
-    let dispatchedCount = 0;
-
-    for(let i=0; i<requestList.length; i+=batchSize){
-        const batch = requestList.slice(i, i+batchSize);
-        await Promise.all(batch.map(request => sendToQueue(env, { 
-            hashtag: request.hashtag||'',
-            id: request.id,
-        }
-            
-        )));
-        dispatchedCount += batch.length;
-    }
-
-    return { dispatched: dispatchedCount, message: `Dispatched ${dispatchedCount} scraping jobs to the queue` };
-
-}
-
-
-export const dispacthItemScrapingJob = async(env: AppEnv) => {
-  // get all tiktok scraped url list
-
-  const listingData = await getTiktokListingVideosWithWebhook();
+  try {
+    
   
-  if(listingData.length === 0){
-      return { dispatched: 0, message: "No scraped videos urls found" };
+      const requestList = await getTiktokScrapingRequestByHashtag(hashtag);
+
+      if(requestList.length === 0){
+          return { dispatched: 0, message: "No scraping requests found" };
+      }
+      const batchSize = 5;
+      let dispatchedCount = 0;
+
+      for(let i=0; i<requestList.length; i+=batchSize){
+          const batch = requestList.slice(i, i+batchSize);
+          await Promise.all(batch.map(request => sendToQueue(env, { 
+              hashtag: request.hashtag||'',
+              id: request.id,
+          }
+              
+          )));
+          dispatchedCount += batch.length;
+      }
+
+      return { dispatched: dispatchedCount, message: `Dispatched ${dispatchedCount} scraping jobs to the queue` };
+
+    } catch (error) {
+      console.error('Error in dispatchScraperListingSpecificHashtagJob:', error instanceof Error ? error.message : error);
+      return { dispatched: 0, message: `Error dispatching specific hashtag scraping job: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
 
-  for(const data of listingData){
-    console.log(`Request ID: ${data.id}, Videos: ${data.videos.length}`);
+}
+export const dispacthItemScrapingJob = async(env: AppEnv) => {
+  // get all tiktok scraped url list
+  try {
+    const listingData = await getTiktokListingVideosWithWebhook();
     
-    const batchSize = 50;
-    let dispatchedCount = 0;
-    
-    for(let i=0; i<data.videos.length; i+=batchSize){
-        const batch = data.videos.slice(i, i+batchSize);
-        const webhook_internal_scraper = `${env.WEBHOOK_URL}?request_id=${data.id}`;
-        const urls = batch.map(item => item.url);
-        await scrapeVideosByUrl(env, urls, webhook_internal_scraper);
-        dispatchedCount += batch.length;
-    }}
+    if(listingData.length === 0){
+        return { dispatched: 0, message: "No scraped videos urls found" };
+    }
 
-  return { dispatched: listingData.length, message: `Dispatched ${listingData.length} item scraping jobs to brightdata` };
+    for(const data of listingData){
+      console.log(`Request ID: ${data.id}, Videos: ${data.videos.length}`);
+      
+      const batchSize = 50;
+      let dispatchedCount = 0;
+      
+      for(let i=0; i<data.videos.length; i+=batchSize){
+          const batch = data.videos.slice(i, i+batchSize);
+          const webhook_internal_scraper = `${env.WEBHOOK_URL}?request_id=${data.id}`;
+          const urls = batch.map(item => item.url);
+          await scrapeVideosByUrl(env, urls, webhook_internal_scraper);
+          dispatchedCount += batch.length;
+      }}
+
+    return { dispatched: listingData.length, message: `Dispatched ${listingData.length} item scraping jobs to brightdata` };
+
+  } catch (error) {
+    console.error('Error in dispatchItemScrapingJob:', error instanceof Error ? error.message : error);
+    return { dispatched: 0, message: `Error dispatching item scraping job: ${error instanceof Error ? error.message : 'Unknown error'}` };
+  }
 }
 
 

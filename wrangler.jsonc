@@ -31,7 +31,7 @@
   "triggers": {
     "crons": [
       "0 23 * * *", // 6 AM UTC+7
-      "12 7 * * *",  // 2 PM UTC+7
+      "30 7 * * *",  // 2 PM UTC+7
       "0 15 * * *",  // 10 PM UTC+7
       "0 15 * * 3"  // items   — Wednesday 10 PM UTC+7 (15:00 UTC)
     ]
