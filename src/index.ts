@@ -63,7 +63,7 @@ export default {
 
 		switch (_event.cron) {
 			case "0 23 * * *": // 6 AM UTC+7
-			case "10 7 * * *":  // 2 PM UTC+7
+			case "12 7 * * *":  // 2 PM UTC+7
 			case "0 15 * * *":  // 10 PM UTC+7
 				console.log(`[cron] Scheduled trigger fired at ${new Date().toISOString()}`);
 				const result = await dispatchScrapingJob(env)
