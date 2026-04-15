@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { InstagramPost_gd_lk5ns7kz21pck8jpis } from '../../../types/intagram_posts_gd_lk5ns7kz21pck8jpis';
 import { getErrorMessage, logError, mapTikTokToConvertedPost, typeConverterV2 } from '../../tools/helper';
-import { logWebhookClientRequest } from '../../services/transactionLogger';
+import { logWebhookClientRequest, logWebhookTiktokClientRequest } from '../../services/transactionLogger';
 import { tiktok_posts_gd_lu702nij2f790tmv9h } from '../../../types/tiktok_posts_gd_lu702nij2f790tmv9h';
 import { getTiktokScrapingRequestByID } from '../../services/tiktokScraperDBHelper';
 
@@ -142,17 +142,16 @@ webhooks.post('/tiktok/videos', async (c) => {
 
           const webhookLogData = {
             webhook_url: client_webhook,
-            account_name: hashTagRequested,
+            tiktok_hashtag: hashTagRequested,
             extras,
             total_scrape_response_count: totalCount,
             valid_scrape_count: validCount,
-            raw_payload: payload,
             response_status: resp_status,
             response_body: resp_body,
             error_message
           }
 
-          await logWebhookClientRequest(webhookLogData);
+          await logWebhookTiktokClientRequest(webhookLogData);
           
         } catch (err) {
           logError('Webhook delivery failed:', err);

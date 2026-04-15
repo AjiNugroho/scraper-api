@@ -1,5 +1,5 @@
 import { db } from "../db/drizzle";
-import { ScraperRequestLog, WebhookClientLog, WorkerRequestLog } from "../db/schema";
+import { ScraperRequestLog, WebhookClientLog, WebhookClientLogTiktok, WorkerRequestLog } from "../db/schema";
 
 interface ScraperRequestLog {
     keyName: string;
@@ -60,9 +60,31 @@ interface WebhookClientLogSchema{
     error_message?:string;
 }
 
+interface WebhookTiktokClientLogSchema{
+    webhook_url:string;
+    tiktok_hashtag: string;
+    extras?:object;
+    total_scrape_response_count:number;
+    valid_scrape_count:number;
+    response_status?:number;
+    response_body?:string;
+    error_message?:string;
+}
+
 export const logWebhookClientRequest = async(data:WebhookClientLogSchema)=>{
     try{
         await db.insert(WebhookClientLog).values({
+           ...data
+        })
+    }
+    catch(error){
+        console.error("Failed to log webhook client request:", error);
+    }
+}
+
+export const logWebhookTiktokClientRequest = async(data:WebhookTiktokClientLogSchema)=>{
+    try{
+        await db.insert(WebhookClientLogTiktok).values({
            ...data
         })
     }

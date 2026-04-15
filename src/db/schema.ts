@@ -187,6 +187,19 @@ export const WebhookClientLog = pgTable("webhook_client_log", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
 
+export const WebhookClientLogTiktok = pgTable("webhook_client_log_tiktok", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  webhook_url: text("webhook_url").notNull(),
+  tiktok_hashtag: text("tiktok_hashtag").notNull(),
+  extras: jsonb("extras"),
+  total_scrape_response_count: integer("total_scrape_response_count").notNull(),
+  valid_scrape_count: integer("valid_scrape_count").notNull(),
+  response_status: integer("response_status"),
+  response_body: text("response_body"),
+  error_message: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+})
+
 export const tiktokScrapingRequests = pgTable("tiktok_scraping_requests", {
   id: uuid("id").primaryKey().defaultRandom(),
   keyName : text("key_name").notNull(),
