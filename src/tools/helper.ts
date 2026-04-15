@@ -373,7 +373,7 @@ export function mapTikTokToConvertedPost(
   return {
     url: input.url,
 
-    user_posted: input.profile_username ?? null,
+    user_posted: input.account_id ?? null,
     user_posted_id: input.profile_id ?? null,
 
     description: input.description ?? null,
