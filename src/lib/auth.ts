@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { betterAuth } from 'better-auth';
 import {schema} from '../db/schema';
-import { admin, apiKey } from "better-auth/plugins"
+import { admin, apiKey, openAPI } from "better-auth/plugins"
 
 const { DATABASE_URL, BETTER_AUTH_URL, BETTER_AUTH_SECRET } = process.env;
 
@@ -36,6 +36,7 @@ export const auth = betterAuth({
           maxRequests: 100,
       }
   }), 
-  admin()
+  admin(),
+  openAPI()
   ] 
 });

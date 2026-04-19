@@ -7,14 +7,16 @@ import webhookRoutes from './routes/webhooks';
 import workerRoutes from './routes/worker';
 import helper from './routes/helper';
 import scraperTiktok, { dispacthItemScrapingJob, dispatchScrapingJob } from './routes/scraper_tiktok';
+import uiRoutes from './routes/ui';
 import { AppEnv } from '../types/Env_types';
+import { insertCronLog } from './services/cronLogHelper';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 app.use(
 	"/api/auth/*",
 	cors({
-		origin: "http://localhost:3000",
+		origin: ["http://localhost:3000", "https://api.fair-studio.com"],
 		allowHeaders: ["Content-Type", "Authorization"],
 		allowMethods: ["POST", "GET", "OPTIONS"],
 		exposeHeaders: ["Content-Length"],
@@ -27,8 +29,8 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => {
 });
 
 app.get('/', (c) => {
-  return c.json({ 
-    status: 'ok', 
+  return c.json({
+    status: 'ok',
     message: 'Scraper API',
     version: '1.0.0',
   });
@@ -40,6 +42,7 @@ app.route('/webhooks',webhookRoutes)
 app.route('/worker',workerRoutes)
 app.route('/helper',helper)
 app.route('/scrape_tiktok',scraperTiktok)
+app.route('/ui',uiRoutes)
 
 
 // 404 handler
@@ -62,18 +65,40 @@ export default {
 	): Promise<void> {
 
 		switch (_event.cron) {
-			case "0 0 * * *": 
-			case "0 7 * * *":  
-			case "0 14 * * *": 
-				console.log(`[cron] Scheduled trigger fired at ${new Date().toISOString()}`);
-				const result = await dispatchScrapingJob(env)
+			case "0 0 * * *":
+			case "0 7 * * *":
+			case "0 14 * * *": {
+				console.log(`[cron] Scheduled listing trigger fired at ${new Date().toISOString()}`);
+				const result = await dispatchScrapingJob(env);
 				console.log(`[cron] ${result.message}`);
+				const isError = result.message.toLowerCase().startsWith('error');
+				await insertCronLog({
+					cronExpression: _event.cron,
+					jobType: 'listing',
+					triggeredBy: 'cron',
+					status: isError ? 'error' : 'success',
+					dispatched: result.dispatched,
+					message: isError ? undefined : result.message,
+					errorMessage: isError ? result.message : undefined,
+				});
 				break;
-			case "0 15 * * 3":
+			}
+			case "0 14 * * 3": {
 				console.log(`[cron] Scheduled item scraping trigger fired at ${new Date().toISOString()}`);
-				const resultItem = await dispacthItemScrapingJob(env)
+				const resultItem = await dispacthItemScrapingJob(env);
 				console.log(`[cron] ${resultItem.message}`);
+				const isItemError = resultItem.message.toLowerCase().startsWith('error');
+				await insertCronLog({
+					cronExpression: _event.cron,
+					jobType: 'item',
+					triggeredBy: 'cron',
+					status: isItemError ? 'error' : 'success',
+					dispatched: resultItem.dispatched,
+					message: isItemError ? undefined : resultItem.message,
+					errorMessage: isItemError ? resultItem.message : undefined,
+				});
 				break;
+			}
 			default:
 				console.warn(`[cron] Unhandled cron schedule: ${_event.cron}`);
 		}

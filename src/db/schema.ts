@@ -235,4 +235,16 @@ export const tiktokHashTagListingVideos = pgTable("tiktok_hashtag_listing_videos
 ]
 );
 
+export const cronLogs = pgTable("cron_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cronExpression: text("cron_expression").notNull(),
+  jobType: text("job_type").notNull(),
+  triggeredBy: text("triggered_by").notNull(),
+  status: text("status").notNull(),
+  dispatched: integer("dispatched").default(0),
+  message: text("message"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const schema = {user,session,account,verification,apikey};
