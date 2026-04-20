@@ -36,6 +36,13 @@
       "when": 1776584524875,
       "tag": "0004_aromatic_risque",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776657821118,
+      "tag": "0005_strong_gunslinger",
+      "breakpoints": true
     }
   ]
 }

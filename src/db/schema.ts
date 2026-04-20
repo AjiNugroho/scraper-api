@@ -247,4 +247,9 @@ export const cronLogs = pgTable("cron_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const itemJobLastRun = pgTable("item_job_last_run", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  lastRunAt: timestamp("last_run_at").defaultNow().notNull(),
+});
+
 export const schema = {user,session,account,verification,apikey};

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import {z} from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { apiKeyAuth } from '../../middlewares/api-key';
-import { getTiktokListingVideosWithWebhook, getTiktokScrapingRequestByHashtag, getTiktokScrapingRequestList, insertTikTokScrapingRequest } from '../../services/tiktokScraperDBHelper';
+import { getTiktokListingVideosWithWebhook, getTiktokScrapingRequestByHashtag, getTiktokScrapingRequestList, insertTikTokScrapingRequest, updateItemJobLastRunByNow } from '../../services/tiktokScraperDBHelper';
 import { sendToQueue } from '../../services/tiktokScraperQueueHelper';
 import { scrapeVideosByUrl } from '../../services/brightDataScraperHelper';
 import { AppEnv } from '../../../types/Env_types';
@@ -74,9 +74,9 @@ async (c) => {
 })
 
 
-scraperTiktok.post('/trigger-all-listing', async(c)=>{
+scraperTiktok.post('/trigger-all-listing-new', async(c)=>{
   try {
-    const dispatchResult = await dispatchScrapingJob(c.env);
+    const dispatchResult = await putAllListingToQueueWorker(c.env);
     return c.json(dispatchResult);
     
   } catch (error) {
@@ -106,7 +106,7 @@ scraperTiktok.post('/trigger-specific-hashtag',
     
 })
 
-scraperTiktok.post('/trigger-item-scraping', async(c)=>{
+scraperTiktok.post('/trigger-item-scraping-new', async(c)=>{
   try {
     const dispatchResult = await dispacthItemScrapingJob(c.env);
     return c.json(dispatchResult);
@@ -117,6 +117,44 @@ scraperTiktok.post('/trigger-item-scraping', async(c)=>{
   }
   
 })
+
+export const putAllListingToQueueWorker = async (env: AppEnv) => {
+  try {
+    const result = await getTiktokScrapingRequestList();
+    // console.log(`Found ${result.length} scraping requests to dispatch`);  
+    for (const request of result) {
+      // console.log(`Dispatching request ID: ${request.id}, Hashtag: ${request.hashtag}`);
+      await env.tiktok_listing_job.send({ 
+        hashtag: request.hashtag || '',
+        id: request.id,
+      });
+    }
+    // console.log(`Successfully dispatched ${result.length} scraping jobs to the queue`);
+    return { dispatched: result.length, message: `Dispatched ${result.length} scraping jobs to the queue` };
+  } catch (error) {
+    // console.error('Error in putAllListingToQueueWorker:', error instanceof Error ? error.message : error);
+    return { dispatched: 0, message: `Error dispatching scraping job: ${error instanceof Error ? error.message : 'Unknown error'}` };
+  }
+};
+
+export const putFromQueueWorkerToQueueAMQP = async (message: { hashtag: string; id: string },env: AppEnv) => {
+
+  try {
+    // console.log(`Received message from queue worker: Hashtag: ${message.hashtag}, ID: ${message.id}`);
+    const sendResult = await sendToQueue(env, { 
+      hashtag: message.hashtag || '',
+      id: message.id.toString(),
+    });
+    // if (sendResult.success) {
+    //   console.log(`Successfully sent message to AMQP queue for Hashtag: ${message.hashtag}, ID: ${message.id}`);
+    // } else {
+    //   console.error(`Failed to send message to AMQP queue for Hashtag: ${message.hashtag}, ID: ${message.id}. Status: ${sendResult.status}, Error: ${sendResult.error}`);
+    // }
+  }
+  catch(error){
+    console.error('Error in putFromQueueWorkerToQueueAMQP:', error instanceof Error ? error.message : error);
+  }
+}
 
 
 
@@ -192,30 +230,37 @@ export const dispacthItemScrapingJob = async(env: AppEnv) => {
   // get all tiktok scraped url list
   try {
     const listingData = await getTiktokListingVideosWithWebhook();
-    
-    if(listingData.length === 0){
-        return { dispatched: 0, message: "No scraped videos urls found" };
-    }
-
-    for(const data of listingData){
-      console.log(`Request ID: ${data.id}, Videos: ${data.videos.length}`);
-      
+    // console.log(`Found ${listingData.length} listing videos to dispatch for item scraping`);
+    for (const data of listingData) {
+      // console.log(`Request ID: ${data.id}, videos length: ${data.videos.length}`);
       const batchSize = 50;
-      let dispatchedCount = 0;
-      
       for(let i=0; i<data.videos.length; i+=batchSize){
           const batch = data.videos.slice(i, i+batchSize);
           const webhook_internal_scraper = `${env.WEBHOOK_URL}?request_id=${data.id}`;
-          const urls = batch.map(item => item.url);
-          await scrapeVideosByUrl(env, urls, webhook_internal_scraper);
-          dispatchedCount += batch.length;
-      }}
+          await env.tiktok_items_job.send({
+            requestId: data.id,
+            video_urls : batch.map(item => item.url),
+            webhook_internal_scraper
+          });
+      }   
+          
+    }
 
-    return { dispatched: listingData.length, message: `Dispatched ${listingData.length} item scraping jobs to brightdata` };
+    await updateItemJobLastRunByNow();
+
+    return{ dispatched: listingData.reduce((acc, data) => acc + data.videos.length, 0), message: `Dispatched item scraping jobs for ${listingData.length} listing entries` };
 
   } catch (error) {
     console.error('Error in dispatchItemScrapingJob:', error instanceof Error ? error.message : error);
     return { dispatched: 0, message: `Error dispatching item scraping job: ${error instanceof Error ? error.message : 'Unknown error'}` };
+  }
+}
+
+export const pushToBrightData = async(video_urls: string[],webhook_url:string, env: AppEnv)=>{
+  try {
+    await scrapeVideosByUrl(env, video_urls, webhook_url);
+  } catch (error) {
+    console.error('Error in pushToBrightData:', error instanceof Error ? error.message : error);
   }
 }
 

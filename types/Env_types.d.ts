@@ -6,5 +6,7 @@ export type AppEnv = {
   BDTOKENSECRET: string;
   WEBHOOK_URL: string;
   MAIN_APP_URL: string;
+  tiktok_listing_job:Queue;
+  tiktok_items_job:Queue;
   
 }

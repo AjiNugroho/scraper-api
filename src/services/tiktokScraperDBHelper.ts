@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "../db/drizzle"
-import { tiktokHashTagListingVideos, tiktokScrapingRequests } from "../db/schema"
+import { itemJobLastRun, tiktokHashTagListingVideos, tiktokScrapingRequests } from "../db/schema"
 
 interface ScraperRequestLog {
     keyName: string;
@@ -60,9 +60,36 @@ export const getTiktokListingVideosAll = async () => {
     return response;
 }
 
+export const updateItemJobLastRunByNow = async () => {
+    // This function updates the last run time of the item job to the current time. It assumes there is only one record in the item_job_last_run table.
+    const now = new Date();
+    const existingRecord = await db.select().from(itemJobLastRun).limit(1);
+
+    if (existingRecord.length > 0) {
+        // Update the existing record
+        await db.update(itemJobLastRun).set({ lastRunAt: now }).where(eq(itemJobLastRun.id, existingRecord[0].id));
+    } else {
+        // Insert a new record if none exists
+        await db.insert(itemJobLastRun).values({ lastRunAt: now });
+    }
+}
+
+export const getItemJobLastRun = async () => {
+    const [record] = await db.select().from(itemJobLastRun).limit(1);
+    if (!record) {
+        // update last run to now
+        await updateItemJobLastRunByNow();
+        return new Date(); // return current time if no record exists
+    }else{
+        return record.lastRunAt;
+    }
+}
 
 export const getTiktokListingVideosWithWebhook = async () => {
-    const result = await db
+
+    const lastRunDate = await getItemJobLastRun();
+
+    const query = db
     .select({
         id: tiktokScrapingRequests.id,
         videos: sql<{ url: string }[]>`
@@ -84,11 +111,13 @@ export const getTiktokListingVideosWithWebhook = async () => {
             video_url,
             created_at
             FROM ${tiktokHashTagListingVideos}
+            WHERE created_at > ${lastRunDate.toDateString()}
             ORDER BY request_id, video_url, created_at DESC
         ) AS v
         `,
         sql`v.request_id = ${tiktokScrapingRequests.id}`
     )
     .groupBy(tiktokScrapingRequests.id);
-    return result;
+    // console.log(query.toSQL().sql); // Log the generated SQL query for debugging
+    return await query;
 }
