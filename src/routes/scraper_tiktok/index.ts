@@ -6,7 +6,6 @@ import { getTiktokListingVideosWithWebhook, getTiktokScrapingRequestByHashtag, g
 import { sendToQueue } from '../../services/tiktokScraperQueueHelper';
 import { scrapeVideosByUrl } from '../../services/brightDataScraperHelper';
 import { AppEnv } from '../../../types/Env_types';
-import scraper from '../scraper';
 
 type Variables ={
   apiKeyName:string;
@@ -144,7 +143,6 @@ export const dispatchScrapingJob = async(env: AppEnv) => {
                   id: request.id,
               }))
           );
-          
           dispatchedCount += batch.length;
       }
  
