@@ -32,7 +32,7 @@ const scraperTiktok = new Hono<{ Bindings: AppEnv,Variables:Variables }>();
 
 scraperTiktok.use('/*',apiKeyAuth);
 
-scraperTiktok.get('/get-job/:phone_id', (c) => {
+scraperTiktok.get('/get-job', (c) => {
   return c.json(['wardah']);
 });
 
