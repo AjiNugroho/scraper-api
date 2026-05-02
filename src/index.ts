@@ -10,6 +10,7 @@ import scraperTiktok, { dispacthItemScrapingJob, pushToBrightData, putAllListing
 import uiRoutes from './routes/ui';
 import { AppEnv } from '../types/Env_types';
 import { insertCronLog } from './services/cronLogHelper';
+import mobile_worker from './routes/mobile_worker';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -43,6 +44,7 @@ app.route('/worker',workerRoutes)
 app.route('/helper',helper)
 app.route('/scrape_tiktok',scraperTiktok)
 app.route('/ui',uiRoutes)
+app.route('/mobile-worker',mobile_worker)
 
 
 // 404 handler
