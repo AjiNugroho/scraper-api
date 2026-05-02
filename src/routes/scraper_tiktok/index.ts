@@ -32,6 +32,10 @@ const scraperTiktok = new Hono<{ Bindings: AppEnv,Variables:Variables }>();
 
 scraperTiktok.use('/*',apiKeyAuth);
 
+scraperTiktok.get('/get-job/:phone_id', (c) => {
+  return c.json(['wardah']);
+});
+
 // insert into tiktokScrapingRequests
 
 scraperTiktok.post('/hashtag',
