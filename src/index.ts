@@ -11,6 +11,9 @@ import uiRoutes from './routes/ui';
 import { AppEnv } from '../types/Env_types';
 import { insertCronLog } from './services/cronLogHelper';
 import mobile_worker from './routes/mobile_worker';
+import mobileWorkersV2 from './routes-v2/tiktok-hashtag-mobile/mobile-workers';
+import jobsV2 from './routes-v2/tiktok-hashtag-mobile/jobs';
+import resultsV2 from './routes-v2/tiktok-hashtag-mobile/results';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -45,6 +48,12 @@ app.route('/helper',helper)
 app.route('/scrape_tiktok',scraperTiktok)
 app.route('/ui',uiRoutes)
 app.route('/mobile-worker',mobile_worker)
+
+// v2
+app.route('/v2/tiktok-hashtag-mobile/workers', mobileWorkersV2)
+app.route('/v2/tiktok-hashtag-mobile/jobs', jobsV2)
+app.route('/v2/tiktok-hashtag-mobile/results', resultsV2)
+
 
 
 // 404 handler

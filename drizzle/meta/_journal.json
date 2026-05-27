@@ -43,6 +43,13 @@
       "when": 1776657821118,
       "tag": "0005_strong_gunslinger",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779892417630,
+      "tag": "0006_lush_otto_octavius",
+      "breakpoints": true
     }
   ]
 }
