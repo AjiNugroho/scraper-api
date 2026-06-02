@@ -94,7 +94,7 @@ export default {
 				});
 				break;
 			}
-			case "0 14 * * 0": {
+			case "0 14 * * SUN": {
 				console.log(`[cron] Scheduled item scraping trigger fired at ${new Date().toISOString()}`);
 				const resultItem = await dispacthItemScrapingJob(env);
 				console.log(`[cron] ${resultItem.message}`);
